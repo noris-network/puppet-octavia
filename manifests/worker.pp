@@ -84,12 +84,9 @@ validate_hash($nova_flavor_config)
       }
       $nova_flavor_defaults = merge($octavia_flavor_defaults, $nova_flavor_config)
       create_resources('nova_flavor', $octavia_flavor, $nova_flavor_defaults)
-      Nova_flavor<| tag == 'octavia' |> ~> Service['octavia-worker']
     }
   }
 
-  Octavia_config<||> ~> Service['octavia-worker']
-  Package['octavia-worker'] -> Service['octavia-worker']
   package { 'octavia-worker':
     ensure => $package_ensure,
     name   => $::octavia::params::worker_package_name,
@@ -97,20 +94,23 @@ validate_hash($nova_flavor_config)
   }
 
   if $manage_service {
+    Nova_flavor<| tag == 'octavia' |> ~> Service['octavia-worker']
+    Octavia_config<||> ~> Service['octavia-worker']
+    Package['octavia-worker'] -> Service['octavia-worker']
     if $enabled {
       $service_ensure = 'running'
     } else {
       $service_ensure = 'stopped'
     }
-  }
 
-  service { 'octavia-worker':
-    ensure     => $service_ensure,
-    name       => $::octavia::params::worker_service_name,
-    enable     => $enabled,
-    hasstatus  => true,
-    hasrestart => true,
-    tag        => ['octavia-service'],
+    service { 'octavia-worker':
+      ensure     => $service_ensure,
+      name       => $::octavia::params::worker_service_name,
+      enable     => $enabled,
+      hasstatus  => true,
+      hasrestart => true,
+      tag        => ['octavia-service'],
+    }
   }
 
   octavia_config {

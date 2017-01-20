@@ -25,6 +25,11 @@
 # [*sync_db*]
 #   (optional) Run octavia-db-manage upgrade head on api nodes after installing the package.
 #   Defaults to false
+#
+# [*service_ensure*]
+#   (optional) Ensure service is in given state f.e. 'running'
+#   Defaults to 'running'
+#
 
 class octavia::api (
   $manage_service        = true,
@@ -33,14 +38,11 @@ class octavia::api (
   $host                  = '0.0.0.0',
   $port                  = '9876',
   $sync_db               = false,
+  $service_ensure        = 'running',
 ) inherits octavia::params {
 
   include ::octavia::policy
 
-  Octavia_config<||> ~> Service['octavia-api']
-  Class['octavia::policy'] ~> Service['octavia-api']
-
-  Package['octavia-api'] -> Service['octavia-api']
   Package['octavia-api'] -> Class['octavia::policy']
   package { 'octavia-api':
     ensure => $package_ensure,
@@ -49,10 +51,18 @@ class octavia::api (
   }
 
   if $manage_service {
-    if $enabled {
-      $service_ensure = 'running'
-    } else {
-      $service_ensure = 'stopped'
+    Octavia_config<||> ~> Service['octavia-api']
+    Class['octavia::policy'] ~> Service['octavia-api']
+    Package['octavia-api'] -> Service['octavia-api']
+
+    service { 'octavia-api':
+      ensure     => $service_ensure,
+      name       => $::octavia::params::api_service_name,
+      enable     => $enabled,
+      hasstatus  => true,
+      hasrestart => true,
+      require    => Class['octavia::db'],
+      tag        => ['octavia-service', 'octavia-db-sync-service'],
     }
   }
 
@@ -60,19 +70,10 @@ class octavia::api (
     include ::octavia::db::sync
   }
 
-  service { 'octavia-api':
-    ensure     => $service_ensure,
-    name       => $::octavia::params::api_service_name,
-    enable     => $enabled,
-    hasstatus  => true,
-    hasrestart => true,
-    require    => Class['octavia::db'],
-    tag        => ['octavia-service', 'octavia-db-sync-service'],
-  }
 
   octavia_config {
-    'api/host'                             : value => $host;
-    'api/port'                             : value => $port;
+    'DEFAULT/bind_host'                             : value => $host;
+    'DEFAULT/bind_port'                             : value => $port;
   }
 
 }

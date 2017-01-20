@@ -189,6 +189,10 @@
 #   in the octavia config.
 #   Defaults to false.
 #
+# [*manage_db*]
+#   (optional) Manage database by including octavia::db module
+#   Defaults to true.
+#
 class octavia (
   $ensure_package                     = 'present',
   $default_transport_url              = $::os_service_default,
@@ -231,10 +235,13 @@ class octavia (
   $notification_topics                = $::os_service_default,
   $topic                              = 'octavia-rpc',
   $purge_config                       = false,
+  $manage_db                          = true,
 ) inherits octavia::params {
 
   include ::octavia::logging
-  include ::octavia::db
+  if($manage_db) {
+    include ::octavia::db
+  }
 
   package { 'octavia':
     ensure => $ensure_package,

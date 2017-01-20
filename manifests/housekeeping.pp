@@ -45,6 +45,10 @@
 # [*cert_rotate_threads*]
 #   (optional) Number of threads performing amphora certificate rotation.
 #   Defaults to $::os_service_default
+#
+# [*service_ensure*]
+#   (optional)
+#   Defaults to 'running'
 
 class octavia::housekeeping (
   $manage_service            = true,
@@ -58,10 +62,9 @@ class octavia::housekeeping (
   $cert_interval             = $::os_service_default,
   $cert_expiry_buffer        = $::os_service_default,
   $cert_rotate_threads       = $::os_service_default,
+  $service_ensure            = 'running',
 ) inherits octavia::params {
 
-  Octavia_config<||> ~> Service['octavia-housekeeping']
-  Package['octavia-housekeeping'] -> Service['octavia-housekeeping']
   package { 'octavia-housekeeping':
     ensure => $package_ensure,
     name   => $::octavia::params::housekeeping_package_name,
@@ -69,20 +72,16 @@ class octavia::housekeeping (
   }
 
   if $manage_service {
-    if $enabled {
-      $service_ensure = 'running'
-    } else {
-      $service_ensure = 'stopped'
+    Octavia_config<||> ~> Service['octavia-housekeeping']
+    Package['octavia-housekeeping'] -> Service['octavia-housekeeping']
+    service { 'octavia-housekeeping':
+      ensure     => $service_ensure,
+      name       => $::octavia::params::housekeeping_service_name,
+      enable     => $enabled,
+      hasstatus  => true,
+      hasrestart => true,
+      tag        => ['octavia-service'],
     }
-  }
-
-  service { 'octavia-housekeeping':
-    ensure     => $service_ensure,
-    name       => $::octavia::params::housekeeping_service_name,
-    enable     => $enabled,
-    hasstatus  => true,
-    hasrestart => true,
-    tag        => ['octavia-service'],
   }
 
   octavia_config {

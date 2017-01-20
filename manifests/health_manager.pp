@@ -21,6 +21,10 @@
 #   (optional) Driver to use for synchronizing octavia and lbaas databases.
 #   Defaults to $::os_service_default
 #
+# [*service_ensure*]
+#   (optional)
+#   Defaults to 'running'
+#
 
 class octavia::health_manager (
   $heartbeat_key,
@@ -28,12 +32,11 @@ class octavia::health_manager (
   $enabled                 = true,
   $package_ensure          = 'present',
   $event_streamer_driver   = $::os_service_default,
+  $service_ensure          = 'running',
 ) inherits octavia::params {
 
   validate_string($heartbeat_key)
 
-  Octavia_config<||> ~> Service['octavia-health-manager']
-  Package['octavia-health-manager'] -> Service['octavia-health-manager']
   package { 'octavia-health-manager':
     ensure => $package_ensure,
     name   => $::octavia::params::health_manager_package_name,
@@ -41,20 +44,16 @@ class octavia::health_manager (
   }
 
   if $manage_service {
-    if $enabled {
-      $service_ensure = 'running'
-    } else {
-      $service_ensure = 'stopped'
+    Octavia_config<||> ~> Service['octavia-health-manager']
+    Package['octavia-health-manager'] -> Service['octavia-health-manager']
+    service { 'octavia-health-manager':
+      ensure     => $service_ensure,
+      name       => $::octavia::params::health_manager_service_name,
+      enable     => $enabled,
+      hasstatus  => true,
+      hasrestart => true,
+      tag        => ['octavia-service'],
     }
-  }
-
-  service { 'octavia-health-manager':
-    ensure     => $service_ensure,
-    name       => $::octavia::params::health_manager_service_name,
-    enable     => $enabled,
-    hasstatus  => true,
-    hasrestart => true,
-    tag        => ['octavia-service'],
   }
 
   octavia_config {
