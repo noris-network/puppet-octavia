@@ -186,15 +186,16 @@ class octavia::worker (
     } else {
       $service_ensure = 'stopped'
     }
-  }
 
-  service { 'octavia-worker':
-    ensure     => $service_ensure,
-    name       => $::octavia::params::worker_service_name,
-    enable     => $enabled,
-    hasstatus  => true,
-    hasrestart => true,
-    tag        => ['octavia-service'],
+    service { 'octavia-worker':
+      ensure     => $service_ensure,
+      name       => $::octavia::params::worker_service_name,
+      enable     => $enabled,
+      hasstatus  => true,
+      hasrestart => true,
+      tag        => ['octavia-service'],
+    }
+
   }
 
   if $manage_keygen and ! $::octavia::controller::enable_ssh_access_real {
