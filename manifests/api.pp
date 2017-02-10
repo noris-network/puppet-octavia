@@ -65,7 +65,6 @@ class octavia::api (
     } else {
       $service_ensure = 'stopped'
     }
-
     service { 'octavia-api':
       ensure     => $service_ensure,
       name       => $::octavia::params::api_service_name,
