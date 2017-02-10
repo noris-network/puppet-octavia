@@ -11,10 +11,14 @@
 #   Defaults to true.
 #
 # [*host*]
+#   (optional) The hostname octavia should report/use
+#   Defaults to undef 
+#
+# [*bind_host*]
 #   (optional) The octavia api bind address.
 #   Defaults to 0.0.0.0
 #
-# [*port*]
+# [*bind_port*]
 #   (optional) The octavia api port.
 #   Defaults to 9876
 #
@@ -34,8 +38,9 @@ class octavia::api (
   $manage_service        = true,
   $enabled               = true,
   $package_ensure        = 'present',
-  $host                  = '0.0.0.0',
-  $port                  = '9876',
+  $host                  = undef,
+  $bind_host             = '0.0.0.0',
+  $bind_port             = '9876',
   $auth_strategy         = 'keystone',
   $sync_db               = false,
 ) inherits octavia::params {
@@ -43,6 +48,8 @@ class octavia::api (
   include ::octavia::deps
   include ::octavia::policy
   include ::octavia::db
+
+  $real_bind_port = pick($bind_port, $port)
 
   if $auth_strategy == 'keystone' {
     include ::octavia::keystone::authtoken
@@ -77,7 +84,8 @@ class octavia::api (
 
   octavia_config {
     'DEFAULT/host'                             : value => $host;
-    'DEFAULT/port'                             : value => $port;
+    'DEFAULT/bind_host'                        : value => $bind_host;
+    'DEFAULT/bind_port'                        : value => $real_bind_port;
     'DEFAULT/auth_strategy'                    : value => $auth_strategy;
   }
 
